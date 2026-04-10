@@ -16,10 +16,10 @@ const METRIC_GROUPS = [
   {
     group: "Edits",
     metrics: [
-      { key: "edits.Total",          label: "Total Edits" },
+      { key: "edits.Total",          label: "Total" },
       { key: "edits.Accepted",       label: "Accepted" },
       { key: "edits.Auto-edits",     label: "Auto-edits" },
-      { key: "edits.Total applied",  label: "Total Applied" },
+      { key: "edits.Total applied",  label: "Applied" },
       { key: "edits.Voted down",     label: "Voted Down" },
       { key: "edits.Failed",         label: "Failed" },
       { key: "edits.Cancelled",      label: "Cancelled" },
@@ -33,7 +33,7 @@ const METRIC_GROUPS = [
       { key: "entities.Artist",        label: "Artists" },
       { key: "entities.Cover art",     label: "Cover Art" },
       { key: "entities.Release",       label: "Releases" },
-      { key: "entities.Release group", label: "Release Groups" },
+      { key: "entities.Release group", label: "Rel. Groups" },
       { key: "entities.Work",          label: "Works" },
       { key: "entities.Label",         label: "Labels" },
       { key: "entities.Recording",     label: "Recordings" },
@@ -42,11 +42,11 @@ const METRIC_GROUPS = [
   {
     group: "Votes",
     metrics: [
-      { key: "votes.overall.Yes",     label: "Yes (Overall)" },
-      { key: "votes.overall.No",      label: "No (Overall)" },
-      { key: "votes.recent.Yes",      label: "Yes (28d)" },
-      { key: "votes.recent.No",       label: "No (28d)" },
-      { key: "votes.recent.Abstain",  label: "Abstain (28d)" },
+      { key: "votes.overall.Yes",    label: "Yes (All)" },
+      { key: "votes.overall.No",     label: "No (All)" },
+      { key: "votes.recent.Yes",     label: "Yes (28d)" },
+      { key: "votes.recent.No",      label: "No (28d)" },
+      { key: "votes.recent.Abstain", label: "Abstain" },
     ],
   },
 ];
@@ -58,9 +58,9 @@ function getNestedValue(obj, keyPath) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-xl text-sm">
-      <p className="text-muted-foreground text-xs mb-1">{label}</p>
-      <p className="font-mono font-semibold text-primary">{payload[0].value?.toLocaleString()}</p>
+    <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-xl text-sm">
+      <p className="text-muted-foreground text-[10px] mb-0.5">{label}</p>
+      <p className="font-mono font-bold text-foreground">{payload[0].value?.toLocaleString()}</p>
     </div>
   );
 };
@@ -87,38 +87,43 @@ export default function TrendsExplorer({ snapshots }) {
   const last  = filteredData[filteredData.length - 1]?.value;
   const delta = first != null && last != null ? last - first : null;
   const TrendIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
-  const trendColor = delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
+  const trendColor = delta > 0 ? "text-emerald-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
+
+  const selectedLabel = METRIC_GROUPS.flatMap(g => g.metrics).find(m => m.key === selectedMetric)?.label;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.1 }}
-      className="bg-card rounded-xl border border-border/50 px-5 pt-5 pb-4"
+      transition={{ duration: 0.4, delay: 0.15 }}
+      className="bg-card rounded-2xl border border-border/40 p-5"
     >
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-4 mb-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Trends Explorer
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Trends
           </p>
-          {delta !== null && (
-            <div className={`flex items-center gap-1 mt-0.5 text-sm font-medium ${trendColor}`}>
-              <TrendIcon className="w-3.5 h-3.5" />
-              {delta > 0 ? "+" : ""}{delta.toLocaleString()}
-            </div>
-          )}
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm font-medium">{selectedLabel}</p>
+            {delta !== null && (
+              <span className={`flex items-center gap-0.5 text-xs font-mono font-semibold ${trendColor}`}>
+                <TrendIcon className="w-3 h-3" />
+                {delta > 0 ? "+" : ""}{delta.toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
         {/* Time range */}
-        <div className="flex gap-1">
+        <div className="flex items-center gap-0.5 bg-muted rounded-xl p-1 shrink-0">
           {TIME_RANGES.map(r => (
             <button
               key={r.label}
               onClick={() => setSelectedRange(r.hours)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                 selectedRange === r.hours
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {r.label}
@@ -127,55 +132,68 @@ export default function TrendsExplorer({ snapshots }) {
         </div>
       </div>
 
-      {/* Metric groups — compact pill rows */}
-      <div className="flex flex-col gap-2 mb-5">
+      {/* Metric selector */}
+      <div className="flex flex-col gap-2.5 mb-5">
         {METRIC_GROUPS.map(group => (
-          <div key={group.group} className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-muted-foreground w-14 shrink-0">{group.group}</span>
-            {group.metrics.map(m => (
-              <button
-                key={m.key}
-                onClick={() => setSelectedMetric(m.key)}
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors border ${
-                  selectedMetric === m.key
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
+          <div key={group.group} className="flex items-start gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60 w-12 pt-1 shrink-0">
+              {group.group}
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {group.metrics.map(m => (
+                <button
+                  key={m.key}
+                  onClick={() => setSelectedMetric(m.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                    selectedMetric === m.key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Chart */}
       {filteredData.length < 2 ? (
-        <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+        <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
           Not enough data for this range yet.
         </div>
       ) : (
-        <div className="h-48">
+        <div className="h-40 -mx-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={filteredData} margin={{ left: -10, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,14%,92%)" />
+            <LineChart data={filteredData} margin={{ left: 0, right: 4, top: 4, bottom: 0 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+                opacity={0.5}
+              />
               <XAxis
                 dataKey="time"
-                tick={{ fontSize: 10, fill: "hsl(220,10%,55%)" }}
-                axisLine={false} tickLine={false}
+                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false}
+                tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "hsl(220,10%,55%)" }}
-                axisLine={false} tickLine={false}
-                tickFormatter={v => v.toLocaleString()}
-                width={70}
+                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
+                width={36}
               />
               <Tooltip content={<CustomTooltip />} />
               <Line
-                type="monotone" dataKey="value"
-                stroke="hsl(270,60%,50%)" strokeWidth={2}
-                dot={false} activeDot={{ r: 4 }}
+                type="monotone"
+                dataKey="value"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>
