@@ -98,7 +98,6 @@ export default function TrendsExplorer({ snapshots }) {
       transition={{ duration: 0.4, delay: 0.15 }}
       className="bg-card rounded-2xl border border-border/40 p-5"
     >
-      {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -114,7 +113,6 @@ export default function TrendsExplorer({ snapshots }) {
             )}
           </div>
         </div>
-        {/* Time range */}
         <div className="flex items-center gap-0.5 bg-muted rounded-xl p-1 shrink-0">
           {TIME_RANGES.map(r => (
             <button
@@ -132,7 +130,6 @@ export default function TrendsExplorer({ snapshots }) {
         </div>
       </div>
 
-      {/* Metric selector */}
       <div className="flex flex-col gap-2.5 mb-5">
         {METRIC_GROUPS.map(group => (
           <div key={group.group} className="flex items-start gap-2">
@@ -158,7 +155,6 @@ export default function TrendsExplorer({ snapshots }) {
         ))}
       </div>
 
-      {/* Chart */}
       {filteredData.length < 2 ? (
         <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
           Not enough data for this range yet.
@@ -180,6 +176,7 @@ export default function TrendsExplorer({ snapshots }) {
                 interval="preserveStartEnd"
               />
               <YAxis
+                domain={['auto', 'auto']}
                 tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                 axisLine={false}
                 tickLine={false}
