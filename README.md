@@ -1,57 +1,82 @@
-# Brainz Edit Pulse — Backend
+# MBUserEdits
 
-Self-hosted MusicBrainz editor stats scraper + API server.
+A self-hosted MusicBrainz editor statistics dashboard. Scrapes your public MusicBrainz profile on a configurable schedule, stores snapshots in PostgreSQL, and serves a clean React dashboard with trend tracking.
 
-## Quick start (Ubuntu / WSL)
+![Dashboard showing edit stats, entity breakdown, and trends chart](https://i.imgur.com/WeV1isI.png)
 
-```bash
-bash setup.sh
-npm start
-```
+## Features
 
-`setup.sh` will:
-1. Install Node.js 20 (via NodeSource) if needed
-2. Install & start PostgreSQL if needed
-3. Create the `brainz` DB user and `brainz_edit_pulse` database
-4. Prompt for your MB username and scrape interval
-5. Write `.env`
-6. Run `npm install` and DB migrations
+- Tracks edits, votes, and added entities over time
+- Trends explorer — chart any metric over 1h / 6h / 24h / 7d / 30d / all time
+- Entity breakdown with animated bar chart
+- Raw data view for debugging
+- Dark mode
+- Mobile-friendly
 
-## Manual setup
+## Self-hosting
+
+### YunoHost (recommended)
 
 ```bash
-cp .env.example .env
-# Edit .env with your values
-npm install
-npm run setup-db   # create tables
-npm start
+sudo yunohost app install https://github.com/YoGo9/MBUserEdits_ynh
 ```
 
-## Scripts
+Install questions: domain/path, MusicBrainz username, scrape schedule (cron expression).
 
-| Command | Description |
-|---|---|
-| `npm start` | Start server + cron scraper |
-| `npm run dev` | Same, with `--watch` for auto-reload |
-| `npm run scrape` | Run one scrape immediately and exit |
-| `npm run setup-db` | Create/update DB tables (safe to re-run) |
+### Manual (Ubuntu / WSL)
 
-## API endpoints
+**Prerequisites:** Node.js 18+, PostgreSQL
+
+```bash
+git clone https://github.com/YoGo9/MBUserEdits.git
+cd MBUserEdits
+bash setup.sh        # installs deps, creates DB, writes .env
+npm run build        # builds the React frontend
+npm start            # starts server on :3456
+```
+
+Open http://localhost:3456
+
+#### Development workflow
+
+```bash
+# Terminal 1 — backend with auto-reload
+npm run dev
+
+# Terminal 2 — frontend with hot reload
+cd frontend && npm run dev
+# Open http://localhost:5173
+```
+
+## Project structure
+
+```
+MBUserEdits/
+├── src/                  — Express backend + scraper
+│   ├── index.js          — entry point (server + cron)
+│   ├── api/routes.js     — REST API endpoints
+│   ├── db/               — PostgreSQL pool, migrations, read, write
+│   └── scraper/          — HTML parser, scraper, run-once
+├── frontend/             — React (Vite) dashboard
+│   └── src/
+│       ├── pages/        — Dashboard, RawData
+│       ├── components/   — StatCard, EntitiesChart, TrendsExplorer, UserHeader
+│       └── api/          — API client
+├── .env.example          — config template
+└── setup.sh              — one-time local setup script
+```
+
+## API
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/config` | Username + cron expression |
 | GET | `/api/latest` | Most recent successful snapshot |
-| GET | `/api/snapshots` | Time-series snapshots (see params below) |
-| GET | `/api/runs` | Scrape run history (debugging) |
+| GET | `/api/snapshots?since=<ISO>&limit=<n>` | Time-series data |
+| GET | `/api/runs?limit=<n>` | Scrape run history |
 | POST | `/api/fetch` | Trigger a manual scrape |
 
-### `/api/snapshots` query params
-
-| Param | Default | Description |
-|---|---|---|
-| `since` | 30 days ago | ISO timestamp lower bound, or `all` for full history |
-| `limit` | 2000 | Max rows (hard cap: 10000) |
+`since` defaults to 30 days ago. Pass `since=all` for full history.
 
 ## Database schema
 
@@ -70,4 +95,9 @@ PostgreSQL does not auto-start in WSL. After each reboot:
 
 ```bash
 sudo service postgresql start
+npm start
 ```
+
+## License
+
+MIT
