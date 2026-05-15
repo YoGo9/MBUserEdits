@@ -22,7 +22,7 @@ export default function Dashboard() {
     try {
       const [latest, snaps] = await Promise.all([
         api.latestSnapshot().catch(() => null),
-        api.listSnapshots(undefined, 2000),
+        api.listSnapshots('all', 2000),
       ]);
       setStats(latest);
       setSnapshots(snaps);
