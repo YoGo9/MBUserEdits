@@ -65,26 +65,24 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-export default function TrendsExplorer({ snapshots }) {
+export default function TrendsExplorer({ snapshots, selectedRange, onRangeChange }) {
   const [selectedMetric, setSelectedMetric] = useState("edits.Total");
-  const [selectedRange, setSelectedRange]   = useState(24);
 
-  const filteredData = useMemo(() => {
-    let data = [...snapshots].sort((a, b) => new Date(a.fetchedAt) - new Date(b.fetchedAt));
-    if (selectedRange !== null) {
-      const cutoff = new Date(Date.now() - selectedRange * 3600 * 1000);
-      data = data.filter(s => new Date(s.fetchedAt) >= cutoff);
-    }
-    return data.map(s => ({
-      time: new Date(s.fetchedAt).toLocaleString([], {
-        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-      }),
-      value: getNestedValue(s, selectedMetric),
-    })).filter(d => d.value !== null);
-  }, [snapshots, selectedMetric, selectedRange]);
+  const chartData = useMemo(() => {
+    // Snapshots are already filtered server-side — just sort and map
+    return [...snapshots]
+      .sort((a, b) => new Date(a.fetchedAt) - new Date(b.fetchedAt))
+      .map(s => ({
+        time: new Date(s.fetchedAt).toLocaleString([], {
+          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+        }),
+        value: getNestedValue(s, selectedMetric),
+      }))
+      .filter(d => d.value !== null);
+  }, [snapshots, selectedMetric]);
 
-  const first = filteredData[0]?.value;
-  const last  = filteredData[filteredData.length - 1]?.value;
+  const first = chartData[0]?.value;
+  const last  = chartData[chartData.length - 1]?.value;
   const delta = first != null && last != null ? last - first : null;
   const TrendIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
   const trendColor = delta > 0 ? "text-emerald-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
@@ -98,6 +96,7 @@ export default function TrendsExplorer({ snapshots }) {
       transition={{ duration: 0.4, delay: 0.15 }}
       className="bg-card rounded-2xl border border-border/40 p-5"
     >
+      {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -113,11 +112,12 @@ export default function TrendsExplorer({ snapshots }) {
             )}
           </div>
         </div>
+        {/* Time range — calls parent to refetch */}
         <div className="flex items-center gap-0.5 bg-muted rounded-xl p-1 shrink-0">
           {TIME_RANGES.map(r => (
             <button
               key={r.label}
-              onClick={() => setSelectedRange(r.hours)}
+              onClick={() => onRangeChange(r.hours)}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                 selectedRange === r.hours
                   ? "bg-background text-foreground shadow-sm"
@@ -130,6 +130,7 @@ export default function TrendsExplorer({ snapshots }) {
         </div>
       </div>
 
+      {/* Metric selector */}
       <div className="flex flex-col gap-2.5 mb-5">
         {METRIC_GROUPS.map(group => (
           <div key={group.group} className="flex items-start gap-2">
@@ -155,40 +156,33 @@ export default function TrendsExplorer({ snapshots }) {
         ))}
       </div>
 
-      {filteredData.length < 2 ? (
+      {/* Chart */}
+      {chartData.length < 2 ? (
         <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
           Not enough data for this range yet.
         </div>
       ) : (
         <div className="h-40 -mx-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={filteredData} margin={{ left: 0, right: 4, top: 4, bottom: 0 }}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
-                opacity={0.5}
-              />
+            <LineChart data={chartData} margin={{ left: 0, right: 4, top: 4, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
               <XAxis
                 dataKey="time"
                 tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                axisLine={false}
-                tickLine={false}
+                axisLine={false} tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
                 domain={['auto', 'auto']}
                 tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                axisLine={false}
-                tickLine={false}
+                axisLine={false} tickLine={false}
                 tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
                 width={36}
               />
               <Tooltip content={<CustomTooltip />} />
               <Line
-                type="monotone"
-                dataKey="value"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
+                type="monotone" dataKey="value"
+                stroke="hsl(var(--primary))" strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 0 }}
               />

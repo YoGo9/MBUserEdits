@@ -1,7 +1,3 @@
-/**
- * Self-hosted API client
- */
-
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 async function apiFetch(path, options = {}) {
@@ -17,8 +13,9 @@ async function apiFetch(path, options = {}) {
 }
 
 export const api = {
-  listSnapshots(since = undefined, limit = 2000) {
-    const params = new URLSearchParams({ limit });
+  // since: ISO string or 'all'. No limit — server returns everything in range.
+  listSnapshots(since = undefined) {
+    const params = new URLSearchParams({ limit: 10000 });
     if (since) params.set('since', since);
     return apiFetch(`/api/snapshots?${params}`);
   },
